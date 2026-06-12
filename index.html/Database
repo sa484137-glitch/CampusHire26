@@ -1,0 +1,59 @@
+-- 1. Tabel Utama Pengguna
+CREATE TABLE users (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('mahasiswa', 'umkm') NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 2. Tabel Profil Mahasiswa (Login Akun Bebas)
+CREATE TABLE mahasiswa_profiles (
+    mahasiswa_id INT PRIMARY KEY,
+    jurusan VARCHAR(100),
+    angkatan INT,
+    no_whatsapp VARCHAR(20),
+    cv_path VARCHAR(255), -- Menyimpan lokasi file PDF di server
+    FOREIGN KEY (mahasiswa_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+-- 3. Tabel Profil UMKM & Sistem Kuota Paket Rp50.000
+CREATE TABLE umkm_profiles (
+    umkm_id INT PRIMARY KEY,
+    nama_bisnis VARCHAR(150) NOT NULL,
+    no_whatsapp VARCHAR(20),
+    package_status ENUM('Belum Aktif', 'Aktif') DEFAULT 'Belum Aktif',
+    quota_posts INT DEFAULT 0, -- Akan diset ke 5 setelah bayar Rp50.000
+    payment_method_chosen ENUM('DANA', 'BRI'),
+    FOREIGN KEY (umkm_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+-- 4. Tabel Lowongan Kerja
+CREATE TABLE jobs (
+    job_id INT AUTO_INCREMENT PRIMARY KEY,
+    umkm_id INT,
+    title VARCHAR(150) NOT NULL,
+    category ENUM('Kuliner', 'Jasa', 'Digital') NOT NULL,
+    salary_offer INT NOT NULL, -- Nominal Gaji yang Ditawarkan
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (umkm_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+-- 5. Tabel Lamaran Kerja & Tracker Potong Gaji 5%
+CREATE TABLE applications (
+    application_id INT AUTO_INCREMENT PRIMARY KEY,
+    job_id INT,
+    mahasiswa_id INT,
+    status ENUM('Diproses Admin', 'Diterima', 'Ditolak') DEFAULT 'Diproses Admin',
+    
+    -- Struktur Split Payment Terkunci
+    is_first_salary_cut BOOLEAN DEFAULT TRUE, -- Otomatis TRUE (5% hanya di gaji awal tempat tersebut)
+    commission_percentage DECIMAL(4,2) DEFAULT 5.00, -- Tetap 5% sesuai aturan baru
+    net_salary_received INT, -- Hasil hitung bersih setelah dipotong 5%
+    
+    applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (job_id) REFERENCES jobs(job_id) ON DELETE CASCADE,
+    FOREIGN KEY (mahasiswa_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
